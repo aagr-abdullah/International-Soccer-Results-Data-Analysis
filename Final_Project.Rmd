@@ -1,0 +1,744 @@
+---
+title: 'POLS 3316 Project: Analyzing International Soccer Results'
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 4
+    number_sections: yes
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: 4
+    number_sections: yes
+---
+\newpage
+# WRITE UP
+
+## THE DATA
+
+The data used for this project is a dataset on Kaggle that contains data on all international soccer matches throughout history, from 1872 to 2022. It can be found by clicking here: [*International football results from 1872 to 2022.*](https://www.kaggle.com/datasets/martj42/international-football-results-from-1872-to-2017) The dataset is updated monthly. In total, it includes 43,170 results from various international tournaments such as the FIFA World Cup, and African Cup of Nations, etc. as well as regular friendly matches. It does not include club soccer data, which would have included matches from leagues such as the English Premier League and the UEFA Champions League, the biggest club soccer tournament in Europe. There is only data on matches that include international teams (which are mostly the national teams of various countries). 
+
+Each row contains information on one match, with each of the nine columns containing nine variables. The variables include the date of the match, the home team, the away team, the home score, the away score, the name of the tournament the match was part of, the city where the match took place, the country where the match took place, and the match’s neutral status. The variables that are the most important to the project are: the date, home team, away team, home score, away score, and the tournament.
+
+## THE VARIABLES
+
+For my project, I took two main subsets from the raw data, these data frames were subsetted based on these two elements of the tournament variable:
+
+- FIFA World Cup
+
+- Friendly
+
+One contained all matches throughout the history of the FIFA World Cup and the other contained all friendly matches since 1872. They were chosen because each was ideal for studying a specific relationship between variables. 
+
+I wanted to use the FIFA World Cup dataset to study the relationship between two variables (the team’s total Goal Difference and Goal Difference per matches played) and a team’s total points in FIFA World Cup history (a measure of its performance). Goal difference is an important soccer statistic that measures how many goals a team scored minus how many goals it lets its opponent team score. In simpler words, goal difference is goals scored minus goals conceded. 
+
+For the friendly matches data, I wanted to study the relationship between a team’s mean score as a home team and its mean score as an away team. If there was no home advantage, the mean difference between these variables should ideally be close to zero. I want to evaluate if there is a home-field advantage, that is, doo teams score better at home? 
+The main issue with studying these variables is that the dataset does not provide variables such as every FIFA World Cup Team’s total goal difference and total points or the mean home and away scores of every international team that has played friendly matches. However, this data can be calculated from the raw data.
+\newpage
+
+## THE DATA CLEANING PROCESS
+
+To get the variables needed for the project, I performed some calculations and data cleaning. I will describe that process in this part of the write-up. In order to make the data cleaning process easier, I created custom functions to use in the process in Section 2.1. The comments in the code chunk explain what each function does. Then, I did some preliminary data cleaning in Section 2.3 of the project to extract a list of every international team in history. It is an interesting list to look at—the appendix contains the entire list for that reason—but it is also useful later in the code when data cleaning and calculating various team scores. The data cleaning in Sections 2.4 and 3.1 is done mostly to extract interesting information from the dataset.
+
+### FIFA WORLD CUP
+
+**GENERAL DATA CLEANING**
+
+For an explanation of how the variables that were used to study relationships and perform regression and hypothesis testing were extracted, skip to the next heading.
+
+In Section 2.4, I generated a subset of every FIFA World Cup match. Naturally, for a tournament like the FIFA World Cup, the most interesting part of the tournament is the final match itself. Although this information won’t be useful in the main part of the project when studying relationships and performing regression and hypothesis testing, it is interesting to look at and visualize, and I have done so in this project. The dataset does not specify which matches are final matches, so I went on the internet and collected some data. I created three vectors based on the data I collected. The world_cup vector contains the years every world cup was held, and start_date and end_date list the exact dates each world cup started and ended, respectively. Then, applying one of my custom functions, I created a subset of the FIFA World Cup subset containing only the matches that occurred on the end dates of a tournament. This created a list of 23 data frames, with each data frame containing matches on the end date. I combined this list of data frames into one data frame. This data frame listed every match occurring on the end date, but some of these matches were not the final matches. There were unique situations in 1938 and 1950 mentioned in the comments that resulted in multiple matches those years on the end date, so I deleted those rows to finally create a data frame of every FIFA World Cup final sorted by year. The entire data frame can be found in the appendix at the end of this document. 
+  
+I then wanted to find the winner of each world cup final, so I created three subsets of the FIFA World Cup Final dataset that were each a data frame of matches. The first data frame contained matches when the “home team” won and the second contained matches when the “away team” won. The third data frame contained draw matches where the winner was decided by penalty shoot-outs and then by deleting columns, I only retained the winner of the shoot-out. Finally, I combined these data frames to create a new data frame that listed which team won the FIFA World Cup every year. This data frame can also be found in the appendix. Upon observing that during all the 21 FIFA World Cups, only a few teams kept winning, again and again, I created a new data frame that listed out the eight champion countries that have won the world cup in the past. This data frame can also be found in the appendix. 
+  
+In Section 3.1, I perform a combination of data analysis and data cleaning. I begin by finding the mean score of the eight champion teams throughout history by combining their mean scores as “home teams” and mean scores as “away teams.” I did this one by one, and the code can be viewed. Then I wanted to find the mean score of every FIFA World Cup Participant, but to do that would have been a laborious process of repeating the same code of chunk 81 times and then combining everything together, so I used custom functions and applied them to quickly return a data frame containing every team and its mean score. The scatterplots of every champion team's mean scores and every team’s mean score can be found in Section 4.1 in the Data Visualization section of this document.
+\newpage
+**COMPUTING VARIABLES NEEDED FOR REGRESSION**
+
+In Section 3.1.3, I calculate different soccer stats for all the teams that have participated in the FIFA World Cup. My goal was to calculate: mathes won, matches lost, matches draw, and total points. The points are calculated by multiplying the number one wins by 3 and adding it to the number of draws. 
+  
+I do this by creating a copy of the FIFA World Cup data frame and adding a column that lists the match winner and a column that lists the match loser. If the match is a draw, the word “DRAW” is listed instead for those columns. Then I mutate the data frame again and create two new columns that each list the name of the two teams if the match is a draw, or else list “NOT DRAW.” Then I filter out all the rows where the value is not “NOT DRAW,” creating a data frame of 119 rows that contains all the draw matches. Then based on this, I create a data frame that shows each team and how many matches it won, a data frame that shows how many matches it lost, and a dataframe that shows how many matches were a draw. Then I merged these dataframes together and calculated a new column called Pts that calculated team points by adding the number of draws to three times the number of wins. 
+  
+Then, I used various custom functions and applied them to the dataset to compute Goal Difference and Average Goal Difference and then merged the result with the previous data frame to create a data frame that shows wins, losses, draws, points, goal difference, and average goal difference for every team. This is the dataset that I used to study relationships and perform regression and hypothesis testing.
+
+### FRIENDLY MATCHES
+
+**GENERAL DATA CLEANING**
+
+The friendly match dataset did not require much data cleaning. Through the same process I used for FIFA World Cup participants, I found the mean score for every team that has participated in friendly matches.
+
+
+**COMPUTING VARIABLES NEEDED FOR REGRESSION**
+
+I also found every team’s mean score as a home team and its mean score as an away team. I studied the relationship between these two variables and used them to perform regression and hypothesis testing later in the project.
+\newpage
+
+## RELATIONSHIPS
+
+### FIFA WORLD CUP
+
+I hypothesized that a team’s points are dependent on its goal difference and its average goal difference. I hypothesized a positive relationship where higher goal difference and average goal difference predicts higher points for the team.
+
+The Null Hypotheses were:
+
+- There is no relationship between GD and Points
+- There is no relationship between Average GD and Points
+
+### FRIENDLY MATCHES
+
+I hypothesized that teams do not tend to have similar scores when playing at home and playing away; the mean difference is not approximately zero. I hypothesized that teams tend to score more at home than away, that there is a home-field advantage. The mean home score will be higher than the mean away score.
+
+The Null Hypothesis was:
+
+- The mean difference between the average home score and average away score is zero; the two scores tend to be similar
+
+\newpage
+## REGRESSION AND HYPOTHESIS TESTING
+
+### FIFA WORLD CUP
+
+I performed two OLS regressions with both of them having points as the independent variable and either goal difference or average goal difference as the dependent variable. Based on the results of the regression, both the null hypotheses were rejected. There appears to be a very significant relationship between GD and Points and between Average Goal Difference and Points.
+
+I also created two linear regression plots for both relationships, but I removed outliers for the plots (something I didn't do for OLS and hypothesis testing). I removed any team that had played seven or less matches in the world cup. There was a linear relationship between average goal difference team points, but for goal difference and team points, there appears to be a negative relationship but it flattens at a point where goal difference is less than zero and where most of the data points are plotted. From there, the relationship appears to be positive, with the line increasing at a decreasing rate. I believe this type of relationship exists because of outlying teams that have high points but very low goal differences (these could be teams that were once great and therefore have many points, but have recently failed to perform and keep conceding scores to their opponents). This also highlights that there are some teams that are very high performing and other teams that are not. Majority of the teams have around the same points, but some have starkly higher points and greater goal differences.
+
+I also performed a Chi-squared test for both hypotheses. The results were very significant. The tests suggested a significant relationship between Average Goal Difference and Team Points, the p-value for this test was 0.0004998. There was also a strong, statistically-significant relationship between  Goal Difference and Team Points, with a p-value of 0.008996, but it appears to be slightly weaker than between Total Goal Difference and Team Points. This might be because Average Goal Difference does not account for how much a team has participated in the FIFA World Cups, since it’s an “average.” 
+
+Obviously teams that tend to score higher points tend to qualify more often for the World Cup and therefore obtain higher Total Goal Difference. Amount of participation (by being good enough to qualify) might be the third variable that’s making the relationship between Goal Difference and Points more significant than just Average Goal Difference. In conclusion, Higher Average Goal Difference predicts higher Team Points, with less accuracy than Total Goal Difference.
+
+### FRIENDLY MATCHES
+
+In Section 3.2.2, I try to calculate how much more teams tend to score as home teams. My calculations showed that there might be a possible advantage since teams had a tendency to score 67.28% higher at home. I compare the average scores at home and away using a bar plot in Section 4.2.2 of the Data Visualization part of this document, and the home score has a much higher bar.
+
+So in order to test this relationship and whether it was significant, I performed a Paired t-test and the null hypothesis was rejected. The test showed that home and away Scores do not tend to be similar and their mean difference is not approximately zero. In fact, there is a mean difference of 0.5212705, therefore, home scores tend to be much higher. The result was very significant, with the test producing a p-value of less than 0.00000000000000022.
+
+\newpage
+## CONCLUSION
+
+I enjoyed exploring this dataset on international soccer matches. This was my first time learning and using the R language and it allowed me to learn a lot of data cleaning, data analysis, and data visualization skills. OLS Regression and Hypothesis Testing turned out to be amazing tools to test relationships between various variables. 
+
+All three of the null hypotheses were rejected. My analysis of FIFA World Cup data showed that both a team's goal difference and average goal difference predict higher points. This proves a broader point: the importance of good defense in soccer. Goal difference is in a way a measure of how good a team's defense is because it subtracts the goals it has allowed another team to score from its score. The relationship was very significant. It can be proven that teams that invest in better defenders and improve their defense will tend to perform better at the World Cup. My analysis on the friendly matches data clearly showed a home-field advantage exists. It was a very significant relationship, with the p-value very close to zero. A home-field advantage cannot be denied and this allows us to make another important argument: the importance of a neutral field in tournament matches. If the home teams have such a significant advantage, then this advantage needs to be removed for tournaments like the FIFA World Cup and the African Cup of Nations. Otherwise, it is an unfair advantage to the home team and removes the purpose of the tournament.
+\newpage
+```{r}
+library(rmarkdown)
+library(tidyverse)
+library(tidyr)
+library(dbplyr)
+library(vctrs)
+library(ggplot2)
+library(ggrepel)
+library(gridExtra)
+library(writexl)
+library(data.table)
+library(knitr)
+```
+\newpage
+
+# DATA CLEANING
+
+## CREATING CUSTOM FUNCTIONS FOR THE PROJECT
+
+```{r}
+subset.tournament <- function(column) {
+  new.df <- subset(raw_data, tournament == column)
+}
+tournament.total.matches <- function(tournament_matrix, team) {
+  new.df <- subset(tournament_matrix, home_team == team | away_team == team)
+}
+participating.teams <- function(tournament_matrix) {
+  x <- as.matrix(count(tournament_matrix, home_team))
+  y <- as.matrix(count(tournament_matrix, away_team))
+  X <- x[,-2]
+  Y <- y[,-2]
+  z <- intersect(X,Y)
+  a <- setdiff(X,Y)
+  b <- setdiff(Y,X)
+  p <- sort(c(z, c(a,b))) 
+}
+home.score.mean <- function(tournament_matrix, team) {
+  x <- subset(tournament_matrix, tournament_matrix$home_team == team)
+  y <- mean(x$home_score)
+  y
+}
+away.score.mean <- function(tournament_matrix, team) {
+  x <- subset(tournament_matrix, tournament_matrix$away_team == team)
+  y <- mean(x$away_score)
+  y
+}
+score.mean <- function(tournament_matrix, team) {
+  x1 <- subset(tournament_matrix, tournament_matrix$home_team == team)
+  y1 <- subset(tournament_matrix, tournament_matrix$away_team == team)
+  sum_x <- sum(x1$home_score)
+  sum_y <- sum(y1$away_score)
+  x_n <- count(x1)
+  y_n <- count(y1)
+  z <- (sum_x+sum_y) / (x_n + y_n)
+}
+standard.clean <- function(tournament_matrix, columns) {
+   tournament_matrix[, -c(columns)] %>% rename(
+    "HOME TEAM" = home_team,
+    "AWAY TEAM" = away_team,
+    "HOME SCORE" = home_score,
+    "AWAY SCORE" = away_score
+  ) %>% rename("MATCH DATE" = date) 
+}
+simple.clean <- function(tournament_matrix) {
+  colnames(tournament_matrix) <- gsub("_", " ", colnames(tournament_matrix))
+  colnames(tournament_matrix) <- toupper(colnames(tournament_matrix))
+  tournament_matrix
+}
+world.cup.total.matches.cleaned <- function(team) {
+  new.df <- subset(FIFA_WC, home_team == team | away_team == team)
+  new.df1 <- standard.clean(new.df, 6:9)
+}
+world.cup.total.matches.v2 <- function(team) {
+  new.df <- subset(FIFA_WC_GD, home_team == team | away_team == team)
+}
+friendly.total.matches.cleaned <- function(team) {
+  new.df <- subset(Friendly_Matches, home_team == team | away_team == team)
+  new.df1 <- standard.clean(new.df, 6:9)
+}
+subset.wc.final.matches <- function(x) {
+  subset(FIFA_WC, FIFA_WC$date == x)
+}
+#FUNCTIONS EXPLAINED:
+
+#subset.tournament():
+#Isolates any Tournament Data into a New Data Frame by subsetting Raw Data
+
+#tournament.total.matches():
+#Creates a data frame to show matches of a given team from a specific tournament
+
+#participating.teams():
+#Creates a vector that lists all participating teams in a specific tournament
+
+#home.score.mean()
+#Calculates average home score of a given team in a given tournament
+
+#away.score.mean()
+#Calculates average away score of a given team in a given tournament
+ 
+#score.mean()
+#Calculates average score of a given team in a given tournament
+ 
+#standard.clean()
+#Modifies any data frame taken from the raw data to fit a specific standard look 
+#and can also delete specific columns
+ 
+#simple.clean()
+#Cleans up the look of any data frame taken from the raw data, mainly by making 
+#column names more readable to users
+
+#world.cup.total.matches.cleaned()
+#Generates a new data frame from the FIFA world cup subset of the raw data that 
+#only contains the matches the inputed team participated in, cleans this data frame, 
+#and returns it
+
+#world.cup.total.matches.v2()
+#Generates and cleans a data frame of all matches for the inputed team including 
+#columns giving home and away goal differences
+
+#subset.wc.final.matches()
+#Creates a subset of all FIFA matches that took place on the end dates of the tournaments
+```
+\newpage
+
+## IMPORTING RAW DATA
+
+```{r}
+#Raw Data Imported
+raw_data <- read_csv("international_soccer_results.csv", show_col_types = FALSE)
+raw_data %>% simple.clean()
+```
+\newpage
+
+## CREATING A LIST OF EVERY INTERNATIONAL TEAM IN HISTORY
+
+```{r}
+#Two Matrices with 2 Columns [Column1: Home/Away Team & Column2: Team Match Count]
+Home_Team_Matrix <- as.matrix(count(raw_data, home_team))
+Away_Team_Matrix <- as.matrix(count(raw_data, away_team))
+
+#Column2 Deleted to Create a List of all Home Teams and a List of all Away Teams
+Home_Teams <- Home_Team_Matrix[,-2]
+Away_Teams <- Away_Team_Matrix[,-2]
+
+#List of Teams That Have Played both at Home and Away
+Common_Teams <- intersect(Home_Teams, Away_Teams)
+
+#List of Teams That Have Only Played at Home or Away
+Unique_Teams <- c(setdiff(Home_Teams, Away_Teams), setdiff(Away_Teams, Home_Teams))
+
+#Adding Common and Unique Teams to Create a Complete List of all International Teams Throughout Soccer History
+International_Teams <- c(Common_Teams, Unique_Teams)
+International_Teams <- data.frame(International_Teams)
+head(International_Teams) %>% simple.clean()
+```
+\newpage
+
+## FIFA WORLD CUP TOURNAMENT SUBSET
+
+### GENERATING SUBSET
+
+```{r}
+#FIFA World Cup Subset
+FIFA_WC <- subset.tournament("FIFA World Cup")
+FIFA_WC %>% standard.clean(6:9)
+FIFA_WC <- FIFA_WC %>% mutate(Match_Winner = if_else(home_score > away_score, home_team, if_else(home_score < away_score, away_team, "DRAW"))) %>% mutate(Match_Loser = if_else(home_score < away_score, home_team, if_else(home_score > away_score, away_team, "DRAW")))
+```
+
+### COMBINING DATA ON FIFA WORLD CUP DATES
+
+```{r}
+#THIS IS DONE SO THAT FINAL MATCHES CAN BE SUBSETTED LATER
+world_cup <- c(1930, 1934, 1938, 1950, 1954, 1958, 1962, 1966, 1970, 1974, 1978, 1982, 1986, 1990, 1994, 1998, 2002, 2006, 2010, 2014, 2018)
+start_date <- as.Date(c("1930-07-03", "1934-05-27", "1938-06-04", "1950-06-24", "1954-06-16", "1958-06-08", "1962-05-30", "1966-07-11", "1970-05-31", "1974-06-13", "1978-06-01", "1982-06-13", "1986-05-31", "1990-06-08", "1994-06-17", "1998-06-10", "2002-05-31", "2006-06-09", "2010-06-11", "2014-06-12", "2018-06-14"))
+end_date <- as.Date(c("1930-07-30", "1934-06-10", "1938-06-19", "1950-07-16", "1954-07-04", "1958-06-29", "1962-06-17", "1966-07-30", "1970-06-21", "1974-07-07", "1978-06-25", "1982-07-11", "1986-06-29", "1990-07-08", "1994-07-17", "1998-07-12", "2002-06-30", "2006-07-09", "2010-07-11", "2014-07-13", "2018-07-15"))
+
+FIFA_WC_Timeline <- data.frame(world_cup, start_date, end_date)
+```
+
+### GENERATING DATA ON FIFA WORLD CUP FINAL MATCHES
+
+```{R}
+#Using FIFA World Cup Dates Data to create a new Data Frame that only shows Matches on End Date
+FIFA_WC_End_Date_Matches_List <- lapply(end_date, subset.wc.final.matches) 
+#list of 21 data frames
+FIFA_WC_End_Date_Matches <- do.call("rbind", FIFA_WC_End_Date_Matches_List) 
+#combined into 1 data frame
+
+#Data needs to be cleaned to only show Final Matches
+#Rows 3 and 9 need to be deleted because:
+#In 1938, there was a 3rd-place play-off on the same day
+#In 1950, the world cup final was played as a round; there were 2 matches on the end date 
+#(I want to only included the match which that year's champion participated in)
+
+FIFA_WC_Final_Matches <- FIFA_WC_End_Date_Matches[-c(3,6),] #delete 2 rows
+FIFA_WC_Final_Matches$world_cup <- world_cup #new column (world cup year)
+FIFA_WC_Final_Matches <- relocate(FIFA_WC_Final_Matches, world_cup, .before = home_team)
+FIFA_WC_Final_Matches <- relocate(FIFA_WC_Final_Matches, date, .after = away_score)
+FIFA_WC_Finals <- FIFA_WC_Final_Matches[-c(6:8)]
+FIFA_WC_Finals[-c(6:9)] %>% simple.clean()
+```
+
+### FINDING FIFA WORLD CUP WINNERS & CURRENT CHAMPION TEAMS
+
+```{r}
+#Create a List of Final Winners
+Home_Wins <- subset(FIFA_WC_Finals, FIFA_WC_Finals$home_score > FIFA_WC_Finals$away_score)
+Home_Wins <- relocate(Home_Wins, country, .after = home_team)
+Home_Wins <- Home_Wins[-c(3:6)]
+Away_Wins <- subset(FIFA_WC_Finals, FIFA_WC_Finals$home_score < FIFA_WC_Finals$away_score)
+Away_Wins <- relocate(Away_Wins, c(country, home_team), .after = away_team)
+Away_Wins <- Away_Wins[-c(3:6)]
+Shoot_Outs <- subset(FIFA_WC_Finals, FIFA_WC_Finals$home_score == FIFA_WC_Finals$away_score)
+Shoot_Outs <- relocate(Shoot_Outs, c(country), .after = home_team)
+#The Penalty Shoot-out winner in both observations appears to be in home_team
+#Therefore, away_team will be deleted to only show winner in the data frame
+Shoot_Outs <- Shoot_Outs[-c(3:6)]
+colnames(Away_Wins) <- colnames(Home_Wins)
+FIFA_WC_Champions <- rbind(Home_Wins, Away_Wins, Shoot_Outs)
+  FIFA_WC_Champions <- arrange(FIFA_WC_Champions, world_cup) %>% rename("CHAMPION" = home_team, "WORLD CUP" = world_cup)
+FIFA_WC_Champions <- FIFA_WC_Champions[,-c(3:5)]
+FIFA_WC_Champions
+
+#Create a List of Teams that have won a World Cup
+FIFA_WC_Champion_Teams <- FIFA_WC_Champions
+FIFA_WC_Champion_Teams <- unique(sort(FIFA_WC_Champion_Teams$`CHAMPION`))
+FIFA_WC_Champion_Teams <- as.data.frame(FIFA_WC_Champion_Teams)
+FIFA_WC_Champion_Teams %>% rename("CHAMPIONS" = FIFA_WC_Champion_Teams)
+```
+\newpage
+
+## FRIENDLY MATCHES SUBSET
+
+```{r}
+Friendly_Matches <- subset(raw_data, raw_data$tournament == "Friendly")
+Friendly_Matches %>% standard.clean(6:9)
+```
+\newpage
+
+# DATA ANALYSIS
+
+## ANALYZING FIFA WORLD CUP DATA
+
+### ANALYZING THE EIGHT PAST CHAMPIONS
+
+```{r}
+FIFA_WC_ARG <- tournament.total.matches(FIFA_WC, "Argentina")
+FIFA_WC_BRA <- tournament.total.matches(FIFA_WC, "Brazil")
+FIFA_WC_ENG <- tournament.total.matches(FIFA_WC, "England")
+FIFA_WC_FRA <- tournament.total.matches(FIFA_WC, "France")
+FIFA_WC_GER <- tournament.total.matches(FIFA_WC, "Germany")
+FIFA_WC_ITA <- tournament.total.matches(FIFA_WC, "Italy")
+FIFA_WC_ESP <- tournament.total.matches(FIFA_WC, "Spain")
+FIFA_WC_URU <- tournament.total.matches(FIFA_WC, "Uruguay")
+
+FIFA_WC_ARG_Home_Mean <- home.score.mean(FIFA_WC_ARG, "Argentina")
+FIFA_WC_ARG_Away_Mean <- away.score.mean(FIFA_WC_ARG, "Argentina")
+FIFA_WC_ARG_Score_Mean <- score.mean(FIFA_WC_ARG, "Argentina")
+
+FIFA_WC_BRA_Home_Mean <- home.score.mean(FIFA_WC_BRA, "Brazil")
+FIFA_WC_BRA_Away_Mean <- away.score.mean(FIFA_WC_BRA, "Brazil")
+FIFA_WC_BRA_Score_Mean <- score.mean(FIFA_WC_BRA, "Brazil")
+
+FIFA_WC_ENG_Home_Mean <- home.score.mean(FIFA_WC_ENG, "England")
+FIFA_WC_ENG_Away_Mean <- away.score.mean(FIFA_WC_ENG, "England")
+FIFA_WC_ENG_Score_Mean <- score.mean(FIFA_WC_ENG, "England")
+
+FIFA_WC_FRA_Home_Mean <- home.score.mean(FIFA_WC_FRA, "France")
+FIFA_WC_FRA_Away_Mean <- away.score.mean(FIFA_WC_FRA, "France")
+FIFA_WC_FRA_Score_Mean <- score.mean(FIFA_WC_FRA, "France")
+
+FIFA_WC_GER_Home_Mean <- home.score.mean(FIFA_WC_GER, "Germany")
+FIFA_WC_GER_Away_Mean <- away.score.mean(FIFA_WC_GER, "Germany")
+FIFA_WC_GER_Score_Mean <- score.mean(FIFA_WC_GER, "Germany")
+
+FIFA_WC_ITA_Home_Mean <- home.score.mean(FIFA_WC_ITA, "Italy")
+FIFA_WC_ITA_Away_Mean <- away.score.mean(FIFA_WC_ITA, "Italy")
+FIFA_WC_ITA_Score_Mean <- score.mean(FIFA_WC_ITA, "Italy")
+
+FIFA_WC_ESP_Home_Mean <- home.score.mean(FIFA_WC_ESP, "Spain")
+FIFA_WC_ESP_Away_Mean <- away.score.mean(FIFA_WC_ESP, "Spain")
+FIFA_WC_ESP_Score_Mean <- score.mean(FIFA_WC_ESP, "Spain")
+
+FIFA_WC_URU_Home_Mean <- home.score.mean(FIFA_WC_URU, "Uruguay")
+FIFA_WC_URU_Away_Mean <- away.score.mean(FIFA_WC_URU, "Uruguay")
+FIFA_WC_URU_Score_Mean <- score.mean(FIFA_WC_URU, "Uruguay")
+
+FIFA_WC_Home_Means_Raw <- c(FIFA_WC_ARG_Home_Mean, FIFA_WC_BRA_Home_Mean, FIFA_WC_ENG_Home_Mean, FIFA_WC_FRA_Home_Mean, FIFA_WC_GER_Home_Mean, FIFA_WC_ITA_Home_Mean, FIFA_WC_ESP_Home_Mean, FIFA_WC_URU_Home_Mean)
+FIFA_WC_Home_Means <- round(FIFA_WC_Home_Means_Raw, digits = 2)
+
+FIFA_WC_Away_Means_Raw <- c(FIFA_WC_ARG_Away_Mean, FIFA_WC_BRA_Away_Mean, FIFA_WC_ENG_Away_Mean, FIFA_WC_FRA_Away_Mean, FIFA_WC_GER_Away_Mean, FIFA_WC_ITA_Away_Mean, FIFA_WC_ESP_Away_Mean, FIFA_WC_URU_Away_Mean)
+FIFA_WC_Away_Means <- round(FIFA_WC_Away_Means_Raw, digits = 2)
+
+FIFA_WC_Score_Means_Raw <- as.numeric(c(FIFA_WC_ARG_Score_Mean, FIFA_WC_BRA_Score_Mean, FIFA_WC_ENG_Score_Mean, FIFA_WC_FRA_Score_Mean, FIFA_WC_GER_Score_Mean, FIFA_WC_ITA_Score_Mean, FIFA_WC_ESP_Score_Mean, FIFA_WC_URU_Score_Mean))
+FIFA_WC_Score_Means <- round(FIFA_WC_Score_Means_Raw, digits = 2)
+
+# DF1 contains all the data, DF2 only shows country and its mean score
+# DF2 is more relevant because home/away status does not matter as much for the world cup as it may for other international tournaments or matches
+
+FIFA_WC_Past_Champions_DF1 <- data.frame(FIFA_WC_Champion_Teams, FIFA_WC_Home_Means, FIFA_WC_Away_Means, FIFA_WC_Score_Means)
+FIFA_WC_Past_Champions_DF1 %>% rename(
+  "COUNTRY" = FIFA_WC_Champion_Teams,
+  "MEAN HOME SCORE" = FIFA_WC_Home_Means,
+  "MEAN AWAY SCORE" = FIFA_WC_Away_Means,
+  "MEAN SCORE" = FIFA_WC_Score_Means)
+
+FIFA_WC_Past_Champions_DF2 <- select(FIFA_WC_Past_Champions_DF1, FIFA_WC_Champion_Teams, FIFA_WC_Score_Means) %>% rename(
+  "COUNTRY" = FIFA_WC_Champion_Teams,
+  "MEAN SCORE" = FIFA_WC_Score_Means)
+FIFA_WC_Past_Champions_DF2
+```
+\newpage
+
+### ANALYZING ALL WORLD CUP PARTICIPANTS
+
+```{r}
+FIFA_Participating_Teams <- participating.teams(FIFA_WC)
+FIFA_WC_Teams <- data.frame(FIFA_Participating_Teams)
+head(FIFA_WC_Teams) %>% rename( "ALL WORLD CUP PARTICIPANTS" = FIFA_Participating_Teams) %>% simple.clean()
+
+FIFA_WC_Teams_List <- as.matrix(FIFA_WC_Teams)
+FIFA_WC_ALL <- apply(X=FIFA_WC_Teams, MARGIN = 1, FUN = world.cup.total.matches.cleaned)
+
+home.score.mean.version2 <- function(x) {
+X1 <- subset(FIFA_WC_ALL[[x]], FIFA_WC_ALL[[x]]$`HOME TEAM` == FIFA_WC_Teams_List[[x]])
+Y1 <- subset(FIFA_WC_ALL[[x]], FIFA_WC_ALL[[x]]$`AWAY TEAM` == FIFA_WC_Teams_List[[x]])
+SUM_X <- sum(X1$`HOME SCORE`)
+SUM_Y <- sum(Y1$`AWAY SCORE`)
+N_X <- count(X1)
+N_Y <- count(Y1)
+HS <- sum(SUM_X, SUM_Y) / sum(N_X, N_Y)
+return(HS)} #custom function to find mean scores of all 81 teams
+
+FIFA_WC_ALL_SCORE_MEANS_UNROUNDED <- mapply(home.score.mean.version2, 1:81) #custom function applied
+FIFA_WC_ALL_SCORE_MEANS <- round(FIFA_WC_ALL_SCORE_MEANS_UNROUNDED, digits = 2)
+
+FIFA_WC_ALL_TEAMS_SCORE_MEANS <- data.frame(FIFA_WC_Teams_List, FIFA_WC_ALL_SCORE_MEANS)
+head(FIFA_WC_ALL_TEAMS_SCORE_MEANS) %>% rename(
+  "TEAM" = FIFA_Participating_Teams, "MEAN SCORE" = FIFA_WC_ALL_SCORE_MEANS)
+```
+\newpage
+
+### TEAM STATISTICS
+
+#### COMPUTING WINS, LOSSES, DRAWS, AND POINTS
+
+```{r}
+FIFA_WC2 <- FIFA_WC
+FIFA_WC2 <- FIFA_WC2 %>% mutate(Draw_1 = if_else(Match_Winner == "DRAW", home_team, "NOT DRAW")) %>% mutate(Draw_2 = if_else(Match_Winner == "DRAW", away_team, "NOT DRAW")) %>% filter(Draw_1 != "NOT DRAW")
+
+FIFA_Draw1 <- as.data.frame(table(FIFA_WC2$home_team))
+FIFA_Draw2 <- as.data.frame(table(FIFA_WC2$away_team))
+
+FIFA_Winner <- as.data.frame(table(FIFA_WC$Match_Winner))
+FIFA_Winner <- FIFA_Winner[-c(18), ]
+
+FIFA_Loser <- as.data.frame(table(FIFA_WC$Match_Loser))
+FIFA_Loser <- FIFA_Loser[-c(23), ]
+
+FIFA_Draw <- merge(FIFA_Draw1, FIFA_Draw2, by = "Var1", all.x = TRUE, all.y = TRUE)
+FIFA_Wins_Losses <- merge(FIFA_Winner, FIFA_Loser, by = "Var1", all.x = TRUE, all.y = TRUE)
+
+FIFA_Points <- merge(FIFA_Wins_Losses, FIFA_Draw, by = "Var1", all.x = TRUE, all.y = TRUE)
+FIFA_Points <- FIFA_Points %>% mutate_if(is.integer, ~replace(., is.na(.), 0)) %>% mutate(D = Freq.x.y + Freq.y.y) 
+
+colnames(FIFA_Points) <- c("Team", "W","L","Dx", "Dy", "D") 
+FIFA_Points <- FIFA_Points[, -c(4:5)] %>% mutate(Pts = 3*W + 1*D) %>% arrange(desc(Pts))
+FIFA_Points$Team <- as.character(FIFA_Points$Team)
+head(FIFA_Points)
+```
+
+#### COMPUTING GOAL DIFFERENCE
+
+```{r}
+FIFA_WC_GD <- FIFA_WC %>% mutate(HGD = home_score - away_score) %>% mutate(AGD = away_score - home_score)
+FIFA_WC_GD$HGD <- FIFA_WC_GD$home_score - FIFA_WC_GD$away_score
+FIFA_WC_GD$AGD <- FIFA_WC_GD$away_score - FIFA_WC_GD$home_score
+FIFA_WC_GD <- FIFA_WC_GD[, -c(1,6:9)]
+
+FIFA_WC_GD1 <- apply(X=FIFA_WC_Teams, MARGIN = 1, FUN = world.cup.total.matches.v2)
+
+Gd.1 <- function(x) {
+X1 <- subset(FIFA_WC_GD1[[x]], FIFA_WC_GD1[[x]]$home_team == FIFA_WC_Teams_List[[x]])
+Y1 <- subset(FIFA_WC_GD1[[x]], FIFA_WC_GD1[[x]]$away_team == FIFA_WC_Teams_List[[x]])
+SUM_X <- sum(X1$HGD)
+SUM_Y <- sum(Y1$AGD)
+GD <- sum(SUM_X, SUM_Y)
+return(GD)} #custom function to find Goal Difference for all 81 teams
+
+Gd.2 <- function(x) {
+X1 <- subset(FIFA_WC_GD1[[x]], FIFA_WC_GD1[[x]]$home_team == FIFA_WC_Teams_List[[x]])
+Y1 <- subset(FIFA_WC_GD1[[x]], FIFA_WC_GD1[[x]]$away_team == FIFA_WC_Teams_List[[x]])
+SUM_X <- sum(X1$HGD)
+SUM_Y <- sum(Y1$AGD)
+N_X <- count(X1)
+N_Y <- count(Y1)
+A_GD <- sum(SUM_X, SUM_Y) / sum(N_X, N_Y)
+return(A_GD)} #custom function to find Average Goal Difference for all 81 teams
+
+FIFA_WC_GD2 <- mapply(Gd.1, 1:81)
+FIFA_WC_GD2 <- as.data.frame(FIFA_WC_GD2)
+FIFA_WC_GD3 <- data.frame(FIFA_WC_Teams_List, FIFA_WC_GD2)
+FIFA_WC_GD3 <- FIFA_WC_GD3 %>% rename("Team" = FIFA_Participating_Teams, "GD" = FIFA_WC_GD2) %>% arrange(desc(GD))
+
+FIFA_WC_A_GD <- mapply(Gd.2, 1:81)
+FIFA_WC_A_GD <- as.data.frame(FIFA_WC_A_GD)
+FIFA_WC_A_GD <- round(FIFA_WC_A_GD, digits = 2)
+FIFA_WC_A_GD2 <- data.frame(FIFA_WC_Teams_List, FIFA_WC_A_GD)
+FIFA_WC_A_GD2 <- FIFA_WC_A_GD2 %>% rename("Team" = FIFA_Participating_Teams, "Average GD" = FIFA_WC_A_GD) %>% arrange(desc(FIFA_WC_A_GD)) 
+
+FIFA_WC_GD_AGD <- merge(FIFA_WC_GD3, FIFA_WC_A_GD2, by = "Team")
+head(FIFA_WC_GD_AGD)
+
+FIFA_STATS <- merge(FIFA_Points, FIFA_WC_GD_AGD, by = "Team")
+head(FIFA_STATS)
+```
+\newpage
+
+### REGRESSION MODELS
+
+#### RELATIONSHIP BETWEEN AVERAGE GD AND POINTS
+
+```{r}
+ols1 <- lm(`Average GD` ~ Pts, FIFA_STATS)
+summary(ols1)
+
+#REMOVED TEAMS THAT PLAYED 7 OR LESS GAMES TO REDUCE OUTLIERS
+#THIS WAS EXPLAINED IN THE WRITE-UP
+FIFA_STATS1 <- FIFA_STATS %>% subset(W+L+D > 7)
+ggplot(data=FIFA_STATS1, aes(x=`Average GD`, y=Pts)) + geom_point(colour = "dark green", size = 2) + ylim(0, 100) +xlim(-2, 1.2) + geom_smooth(method = lm) + ggtitle("FIFA World Cup (1930-2018):", subtitle = "Plotting the relationship between GD per match and a team's total points") + xlab("Average Goal Difference") + ylab("Total Team Points")
+```
+\newpage
+
+#### RELATIONSHIP BETWEEN GD AND POINTS
+
+```{r}
+ols2 <- lm(GD ~ Pts, FIFA_STATS)
+summary(ols2)
+
+#REMOVED TEAMS THAT HAD 7 OR LESS POINTS TO REDUCE OUTLIERS
+#THIS WAS EXPLAINED IN THE WRITE-UP
+ggplot(data=FIFA_STATS1, aes(x=`GD`, y=`Pts`)) + geom_point(colour = "dark green", size = 2) + geom_smooth() + ylim(0, 250) +xlim(-40, 125) + ggtitle("FIFA World Cup (1930-2018):", subtitle = "Plotting the relationship between a team's total GD and it's total points") + xlab("Goal Difference") + ylab("Total Team Points")
+```
+\newpage
+
+## ANALYZING FRIENDLY MATCH DATA
+
+### MEAN SCORES OF EVERY TEAM
+
+```{r}
+FM_Teams <- as.matrix(participating.teams(Friendly_Matches))
+FM_ALL <- apply(X=FM_Teams, MARGIN = 1, FUN = friendly.total.matches.cleaned)
+
+score.mean.version3 <- function(x) {
+X1 <- subset(FM_ALL[[x]], FM_ALL[[x]]$`HOME TEAM` == FM_Teams[[x]])
+Y1 <- subset(FM_ALL[[x]], FM_ALL[[x]]$`AWAY TEAM` == FM_Teams[[x]])
+SUM_X <- sum(X1$`HOME SCORE`)
+SUM_Y <- sum(Y1$`AWAY SCORE`)
+N_X <- count(X1)
+N_Y <- count(Y1)
+HS3 <- sum(SUM_X, SUM_Y) / sum(N_X, N_Y)
+return(HS3)} #custom function to find mean scores for all 264 teams
+
+FM_ALL_SCORE_MEANS_UNROUNDED <- mapply(score.mean.version3, 1:264)
+FM_ALL_SCORE_MEANS <- round(FM_ALL_SCORE_MEANS_UNROUNDED, digits = 2)
+
+FM_ALL_MEAN_SCORES <- data.frame(FM_Teams, FM_ALL_SCORE_MEANS)
+head(FM_ALL_MEAN_SCORES) %>% rename(
+  "TEAM" = FM_Teams, "MEAN SCORE" = FM_ALL_SCORE_MEANS)
+```
+
+### HOW MUCH MORE DO TEAMS TEND TO SCORE AS HOME TEAMS?
+
+```{r}
+home.score.mean.fm.version <- function(x) {
+  X1 <- subset(FM_ALL[[x]], FM_ALL[[x]]$`HOME TEAM` == FM_Teams[[x]])
+  Y1 <- mean(X1$`HOME SCORE`)
+  return(Y1)} #custom function to find mean score of every team when it played at home
+
+FM_ALL_HOME_SCORE_MEANS_UNROUNDED <- mapply(home.score.mean.fm.version, 1:264)
+FM_ALL_HOME_SCORE_MEANS <- round(FM_ALL_HOME_SCORE_MEANS_UNROUNDED, digits = 2)
+
+away.score.mean.fm.version <- function(x) {
+  X1 <- subset(FM_ALL[[x]], FM_ALL[[x]]$`AWAY TEAM` == FM_Teams[[x]])
+  Y1 <- mean(X1$`AWAY SCORE`)
+  return(Y1)} #custom function to find mean score of every team when it played away
+
+FM_ALL_AWAY_SCORE_MEANS_UNROUNDED <- mapply(away.score.mean.fm.version, 1:264)
+FM_ALL_AWAY_SCORE_MEANS <- round(FM_ALL_AWAY_SCORE_MEANS_UNROUNDED, digits = 2)
+
+FM_ALL_HOME_AWAY_SCORES_RAW <- data.frame(FM_Teams, FM_ALL_HOME_SCORE_MEANS, FM_ALL_AWAY_SCORE_MEANS)
+
+#Deleting rows with missing values
+FM_ALL_HOME_AWAY_SCORES_CLEANED <- na.omit(FM_ALL_HOME_AWAY_SCORES_RAW)
+head(FM_ALL_HOME_AWAY_SCORES_CLEANED) %>% rename(
+  "Teams" = FM_Teams,
+  "Home Score (Mean)" = FM_ALL_HOME_SCORE_MEANS,
+  "Away Score (Mean)" = FM_ALL_AWAY_SCORE_MEANS
+) %>% simple.clean()
+
+FM_AVERAGE_HOME_SCORE <- mean(FM_ALL_HOME_AWAY_SCORES_CLEANED$FM_ALL_HOME_SCORE_MEANS)
+FM_AVERAGE_AWAY_SCORE <- mean(FM_ALL_HOME_AWAY_SCORES_CLEANED$FM_ALL_AWAY_SCORE_MEANS)
+
+if(FM_AVERAGE_HOME_SCORE > FM_AVERAGE_AWAY_SCORE) {
+  cat("There is a possible home advantage\n")
+  FM_Home_Field_Advantage <- round(((FM_AVERAGE_AWAY_SCORE/FM_AVERAGE_HOME_SCORE) * 100), digits = 2)
+  cat("In friendly matches, teams have historically scored", FM_Home_Field_Advantage,"% higher at home")}
+```
+\newpage
+
+# DATA VISUALIZATION
+
+## FIFA WORLD CUP SUBSET
+
+### MEAN SCORES OF EVERY TEAM
+
+```{r}
+ggplot(data=FIFA_WC_ALL_TEAMS_SCORE_MEANS, aes(x=FIFA_Participating_Teams, y=FIFA_WC_ALL_SCORE_MEANS)) + geom_line() + geom_point(colour = "dark green", size = 3) + geom_label_repel(aes(label=ifelse((FIFA_WC_ALL_SCORE_MEANS > 1.7 | FIFA_WC_ALL_SCORE_MEANS == 0), FIFA_Participating_Teams, "")), label.padding = 0.3, label.r = 0.5, label.size = 0.6, min.segment.length = 0, force = 10, force_pull = 10) + ylim(0, 3) + ggtitle("FIFA World Cup (1930-2018):", subtitle = "Champion Teams and their Mean Scores in all FIFA World Cup matches ever played") + xlab("FIFA WORLD CUP TEAMS") + ylab("MEAN SCORES") + theme(axis.text.x=element_blank())
+```
+\newpage
+
+### MEAN SCORES OF CHAMPION TEAMS
+
+```{r}
+ggplot(data=FIFA_WC_Past_Champions_DF2, aes(x=`COUNTRY`, y=`MEAN SCORE`)) + geom_line() + geom_point(colour = "dark green", size = 5) + ylim(0, 3) + ggtitle("FIFA World Cup (1930-2018):", subtitle = "Champion Teams and their Mean Scores in all FIFA World Cup matches ever played") + xlab("FIFA WORLD CUP CHAMPIONS") + ylab("MEAN SCORES")
+```
+\newpage
+
+## FRIENDLY MATCHES SUBSET
+
+### MEAN SCORES OF EVERY TEAM
+
+```{r}
+ggplot(data=FM_ALL_MEAN_SCORES, aes(x=FM_Teams, y=FM_ALL_SCORE_MEANS)) + geom_point(colour = "dark green", size = 2) + ylim(0, 7) + ggtitle("Friendly Matches (1872 - 2022):", subtitle = "All Teams and their Mean Scores in all International Friendly matches ever played") + xlab("TEAMS") + ylab("MEAN SCORES") + theme(axis.text.x=element_blank()) + geom_label_repel(min.segment.length = 0, max.overlaps = Inf, label.size = 0.5, label.r = 0.4, aes(label = ifelse(FM_ALL_SCORE_MEANS > 2.8 | FM_ALL_SCORE_MEANS == 0, FM_Teams, ""))) + geom_smooth(method=lm)
+```
+\newpage
+
+### AVERAGE HOME SCORE AND AVERAGE AWAY SCORE
+
+```{r}
+means_vector <- c(FM_AVERAGE_HOME_SCORE, FM_AVERAGE_AWAY_SCORE)
+names_vector <- c("Average Home Score", "Average Away Score")
+barplot(means_vector, col = "dark green", names.arg = names_vector)
+```
+\newpage
+
+# HYPOTHESIS TESTING
+
+## FIFA WORLD CUP DATA
+
+### NULL HYPOTHESIS: NO RELATIONSHIP BETWEEN AVERAGE GD & POINTS
+
+```{r}
+Test1 <- chisq.test(FIFA_STATS$GD, FIFA_STATS$Pts, correct = FALSE, simulate.p.value = TRUE)
+Test1
+```
+
+**Null Hypothesis has been rejected.** 
+
+### NULL HYPOTHESIS: NO RELATIONSHIP BETWEEN GD & POINTS
+
+```{r}
+Test2 <- chisq.test(FIFA_STATS$`Average GD`, FIFA_STATS$Pts, correct = FALSE, simulate.p.value = TRUE)
+Test2
+```
+
+**Null Hypothesis has been rejected.** 
+
+\newpage
+
+## FRIENDLY MATCHES DATA
+
+### NULL HYPOTHESIS: HOME AND AWAY SCORES TEND TO BE SIMILAR
+
+```{r}
+Test3 <- t.test(FM_ALL_HOME_AWAY_SCORES_CLEANED$FM_ALL_HOME_SCORE_MEANS,  FM_ALL_HOME_AWAY_SCORES_CLEANED$FM_ALL_AWAY_SCORE_MEANS, paired = TRUE)
+Test3
+```
+
+**Null Hypothesis has been rejected.** 
+
+\newpage
+
+# APPENDIX
+
+## ALL INTERNATIONAL TEAMS
+
+```{r}
+International_Teams %>% simple.clean() %>% tbl_df %>% print(n=310)
+```
+\newpage
+
+## WORLD CUP PARTICIPANTS
+
+```{r}
+FIFA_WC_Teams %>% rename("TEAM" = FIFA_Participating_Teams) %>% tbl_df %>% print(n=81)
+```
+\newpage
+
+## WORLD CUP WINNERS
+
+```{r}
+FIFA_WC_Champions %>% tbl_df %>% print(n=21)
+```
+\newpage
+
+## WORLD CUP TEAMS STATS
+
+```{r}
+FIFA_STATS[-c(7)] %>% arrange(-Pts, -GD) %>% relocate(GD, .before = Pts) %>% tbl_df %>% print(n=81)
+```
+\newpage
+
+## AVERAGE SCORES FOR WORLD CUP TEAMS
+
+```{r}
+FIFA_WC_ALL_TEAMS_SCORE_MEANS %>% rename("TEAM" = FIFA_Participating_Teams, "MEAN SCORE" = FIFA_WC_ALL_SCORE_MEANS)  %>% tbl_df %>% print(n=81)
+```
+\newpage
+
+## AVERAGE SCORES FOR TEAMS IN FRIENDLY MATCHES
+
+```{r}
+FM_ALL_MEAN_SCORES %>% rename("TEAM" = FM_Teams, "MEAN SCORE" = FM_ALL_SCORE_MEANS) %>% tbl_df %>% print(n=264)
+```
